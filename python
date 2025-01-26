@@ -1,0 +1,93 @@
+# Import necessary libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+import numpy as np
+import os
+
+# Step 1: Data Preprocessing
+def load_data(file_path):
+    """Load data from a CSV file."""
+    if not os.path.exists(file_path):
+        print(f"Error: File not found at path: {file_path}")
+        print("Please ensure the file exists and the path is correct.")
+        return None
+    try:
+        data = pd.read_csv(file_path)
+        print("Data loaded successfully.")
+        return data
+    except Exception as e:
+        print(f"An error occurred while loading the data: {e}")
+        return None
+
+# Step 2: Data Transformation
+def preprocess_data(data, categorical_features, numerical_features, target_column):
+    """Preprocess the data using transformations for numerical and categorical features."""
+
+    # Handle missing values
+    data = data.dropna(subset=[target_column])  # Drop rows where target is missing
+    
+    X = data.drop(target_column, axis=1)
+    y = data[target_column]
+
+    # Define transformations
+    numerical_transformer = Pipeline(steps=[
+        ('scaler', StandardScaler())
+    ])
+
+    categorical_transformer = Pipeline(steps=[
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
+
+    # Combine transformers
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numerical_transformer, numerical_features),
+            ('cat', categorical_transformer, categorical_features)
+        ]
+    )
+
+    return preprocessor, X, y
+
+# Step 3: Data Loading
+def split_and_transform_data(preprocessor, X, y, test_size=0.2, random_state=42):
+    """Split the data into training and test sets and apply transformations."""
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+
+    # Fit and transform the training data
+    X_train = preprocessor.fit_transform(X_train)
+    # Transform the test data
+    X_test = preprocessor.transform(X_test)
+
+    return X_train, X_test, y_train, y_test
+
+# Main Function
+def main():
+    # Example input file path
+    file_path = input("Enter the path to your CSV file: ")  # Prompt user for the file path
+
+    # Specify columns
+    categorical_features = ['category_col1', 'category_col2']  # Replace with actual categorical columns
+    numerical_features = ['num_col1', 'num_col2']  # Replace with actual numerical columns
+    target_column = 'target'  # Replace with the actual target column
+
+    # Load data
+    data = load_data(file_path)
+    if data is not None:
+        
+        # Preprocess data
+        preprocessor, X, y = preprocess_data(data, categorical_features, numerical_features, target_column)
+
+        # Split and transform data
+        X_train, X_test, y_train, y_test = split_and_transform_data(preprocessor, X, y)
+
+        # Print success message
+        print("Data preprocessing and transformation pipeline completed successfully.")
+        print(f"Train set shape: {X_train.shape}, Test set shape: {X_test.shape}")
+
+if __name__ == "__main__":
+    main()
+
